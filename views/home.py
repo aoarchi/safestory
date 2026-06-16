@@ -209,7 +209,7 @@ def _books(topic: str, n: int = 32) -> list:
 
 
 def _book_grid(books: list, user: dict) -> None:
-    n_cols = 4
+    n_cols = 8
     for row_start in range(0, len(books), n_cols):
         row = books[row_start:row_start + n_cols]
         cols = st.columns(n_cols, gap="small")
@@ -217,7 +217,7 @@ def _book_grid(books: list, user: dict) -> None:
             bid    = book["id"]
             cover  = book.get("formats", {}).get("image/jpeg", "")
             title  = book["title"]
-            short  = title[:22] + "…" if len(title) > 22 else title
+            short  = title[:14] + "…" if len(title) > 14 else title
             authors = book.get("authors", [])
             author  = authors[0]["name"].split(",")[0] if authors else ""
 
@@ -227,23 +227,23 @@ def _book_grid(books: list, user: dict) -> None:
                 else:
                     hue = bid % 360
                     st.markdown(
-                        f'<div style="background:hsl({hue},55%,58%);height:148px;'
-                        f'border-radius:4px 8px 8px 4px;display:flex;align-items:center;'
-                        f'justify-content:center;padding:10px;margin-bottom:4px;'
-                        f'box-shadow:2px 4px 10px rgba(0,0,0,.18);">'
-                        f'<span style="color:#fff;font-size:.65rem;font-weight:700;'
-                        f'text-align:center;line-height:1.4;">{short}</span></div>',
+                        f'<div style="background:hsl({hue},55%,58%);height:90px;'
+                        f'border-radius:3px 6px 6px 3px;display:flex;align-items:center;'
+                        f'justify-content:center;padding:6px;margin-bottom:4px;'
+                        f'box-shadow:2px 4px 8px rgba(0,0,0,.18);">'
+                        f'<span style="color:#fff;font-size:.55rem;font-weight:700;'
+                        f'text-align:center;line-height:1.3;">{short}</span></div>',
                         unsafe_allow_html=True,
                     )
 
                 st.markdown(
-                    f"<div style='font-size:.72rem;font-weight:700;line-height:1.3;"
-                    f"margin:4px 0 1px;'>{short}</div>"
-                    f"<div style='font-size:.62rem;color:#888;margin-bottom:4px;'>{author}</div>",
+                    f"<div style='font-size:.6rem;font-weight:700;line-height:1.2;"
+                    f"margin:3px 0 1px;'>{short}</div>"
+                    f"<div style='font-size:.55rem;color:#888;margin-bottom:3px;'>{author}</div>",
                     unsafe_allow_html=True,
                 )
 
-                if st.button("📖 읽기", key=f"read_{bid}", use_container_width=True):
+                if st.button("읽기", key=f"read_{bid}", use_container_width=True):
                     db.add_approved_book(user["id"], bid, title, author, cover)
                     st.session_state["quick_book_id"] = bid
                     st.session_state.app_mode = "reader"
