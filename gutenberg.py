@@ -1,6 +1,7 @@
 import re
 import requests
 import streamlit as st
+from bs4 import BeautifulSoup
 
 # Curated Andersen stories — title as it appears in the Gutenberg text
 STORIES_META = {
@@ -53,6 +54,61 @@ def fetch_stories() -> dict[str, str]:
         content       = body[content_start:content_end].strip()
         if len(content) > 300:
             stories[title] = content
+
+    return stories
+
+
+ENGLISH_TALES_META = {
+    "The Story of the Three Bears":            ("세 마리 곰",               "🐻", "5세 이상"),
+    "Lazy Jack":                                ("게으른 잭",               "😴", "5세 이상"),
+    "Titty Mouse and Tatty Mouse":              ("티티 마우스와 태티 마우스", "🐭", "5세 이상"),
+    "The Three Little Pigs":                    ("세 마리 아기 돼지",        "🐷", "5세 이상"),
+    "Henny-Penny":                              ("헤니 페니",                "🐔", "5세 이상"),
+    "The Old Woman and Her Pig":                ("할머니와 돼지",            "🐷", "5세 이상"),
+    "Little Red Riding-Hood":                   ("빨간 모자",                "🐺", "5세 이상"),
+    "Master of All Masters":                    ("만능 주인",                "😄", "5세 이상"),
+    "Tom-Tit-Tot":                              ("톰팃톳",                   "🧵", "7세 이상"),
+    "Tattercoats":                              ("누더기 외투",              "✨", "7세 이상"),
+    "The Three Sillies":                        ("세 바보",                  "😄", "7세 이상"),
+    "Jack and the Beanstalk":                   ("잭과 콩나무",              "🌱", "7세 이상"),
+    "Dick Whittington and His Cat":             ("딕 위팅턴과 고양이",       "🐱", "7세 이상"),
+    "The Bogey-Beast":                          ("보기 비스트",              "😄", "7세 이상"),
+    "The Babes in the Wood":                    ("숲속의 아이들",            "🌲", "7세 이상"),
+    "Molly Whuppie and the Double-Faced Giant": ("몰리 위피와 거인",         "💪", "7세 이상"),
+}
+
+
+@st.cache_data(ttl=3600, show_spinner=False)
+def fetch_english_fairy_tales() -> dict[str, str]:
+    """Fetch English Fairy Tales (Flora Annie Steel) from Project Gutenberg and split into stories."""
+    url = "https://www.gutenberg.org/files/17034/17034-h/17034-h.htm"
+    try:
+        resp = requests.get(url, timeout=30)
+        resp.encoding = "utf-8"
+    except Exception:
+        return {}
+
+    soup = BeautifulSoup(resp.text, "html.parser")
+    stories: dict[str, str] = {}
+
+    for h2 in soup.find_all("h2"):
+        raw = h2.get_text(strip=True)
+        key = next((k for k in ENGLISH_TALES_META if k.lower() == raw.lower()), None)
+        if not key:
+            continue
+
+        parts = []
+        for sib in h2.next_siblings:
+            if getattr(sib, "name", None) == "h2":
+                break
+            if getattr(sib, "name", None) in ("p", "blockquote", "div", "h3", "h4"):
+                text = sib.get_text(" ", strip=True)
+                if text:
+                    parts.append(text)
+
+        content = "\n\n".join(parts)
+        if len(content) > 100:
+            stories[key] = content
 
     return stories
 
