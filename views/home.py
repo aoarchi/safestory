@@ -26,6 +26,7 @@ div[data-baseweb="base-input"] {
     box-shadow: none !important;
     outline: none !important;
 }
+div[data-testid="stTextInput"] { padding-left: 16px !important; }
 div[data-testid="stTextInput"] input {
     background: #f0e6d3 !important;
     border: none !important;
@@ -300,7 +301,7 @@ def show(user: dict):
     # ── 검색창: 같은 [10,1] columns → SafeStory와 자동 정렬 ───────────────────
     col_search, _ = st.columns([10, 1])
     with col_search:
-        st.markdown("<div style='padding:10px 0 0 16px;'>", unsafe_allow_html=True)
+        st.markdown("<div style='padding-top:10px;'>", unsafe_allow_html=True)
         query = st.text_input(
             "mood",
             placeholder="SEARCH",
