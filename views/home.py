@@ -14,21 +14,36 @@ section[data-testid="stSidebar"] { display:none !important; }
 [data-testid="stVerticalBlock"], section.main > div {
     background: #f0e6d3 !important;
 }
-/* 검색창 */
+/* 검색창 — Streamlit 기본 스타일 완전 제거 */
+div[data-testid="stTextInput"],
+div[data-testid="stTextInput"] > div,
+div[data-baseweb="input"],
+div[data-baseweb="base-input"] {
+    background: #f0e6d3 !important;
+    border: none !important;
+    box-shadow: none !important;
+    outline: none !important;
+}
 div[data-testid="stTextInput"] input {
     background: #f0e6d3 !important;
     border: none !important;
-    border-bottom: 1.5px solid #c4a882 !important;
     border-radius: 0 !important;
+    box-shadow: none !important;
+    outline: none !important;
     padding: 10px 4px !important;
     font-size: 1rem !important;
-    box-shadow: none !important;
     color: #3d2b1f !important;
-    letter-spacing: .08em !important;
+    letter-spacing: .06em !important;
+}
+div[data-testid="stTextInput"] input:focus {
+    box-shadow: none !important;
+    border: none !important;
+    outline: none !important;
 }
 div[data-testid="stTextInput"] input::placeholder { color: #b09a8a !important; }
 div[data-testid="stTextInput"] > label { display:none !important; }
-div[data-testid="stTextInput"] { background: #f0e6d3 !important; }
+/* Streamlit 실행 중 스피너(우상단 돌아가는 아이콘) 숨기기 */
+[data-testid="stStatusWidget"] { display:none !important; }
 </style>
 """
 
