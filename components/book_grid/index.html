@@ -41,45 +41,34 @@ function esc(s){
   if(!s)return'';
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
-
 function sendHeight(){
   requestAnimationFrame(function(){
     window.parent.postMessage({type:'streamlit:setFrameHeight',height:document.documentElement.scrollHeight},'*');
   });
 }
-
 function renderGrid(books){
   var root=document.getElementById('root');
   if(!books||!books.length){
     root.innerHTML='<p style="color:#888;padding:20px">불러오는 중…</p>';
-    sendHeight();
-    return;
+    sendHeight();return;
   }
-
   var grid=document.createElement('div');
   grid.className='sg-grid';
-
   books.forEach(function(book,idx){
     var card=document.createElement('div');
     card.className='sg-card';
     card.dataset.bid=book.bid;
-
     var tilt=TILTS[idx%TILTS.length];
     var p=PALETTES[idx%PALETTES.length];
-
     var bookDiv=document.createElement('div');
     bookDiv.className='sg-book';
     bookDiv.style.transform='rotate('+tilt+'deg)';
-
     var spine=document.createElement('div');
     spine.className='sg-spine';
     bookDiv.appendChild(spine);
-
     if(book.cover){
       var img=document.createElement('img');
-      img.src=book.cover;
-      img.alt='';
-      img.loading='lazy';
+      img.src=book.cover;img.alt='';img.loading='lazy';
       img.style.cssText='width:100%;height:100%;object-fit:cover;display:block;';
       bookDiv.appendChild(img);
     } else {
@@ -89,16 +78,13 @@ function renderGrid(books){
         +'<span style="color:rgba(255,255,255,.65);font-size:.52rem;text-align:center;">'+esc(book.author)+'</span>';
       bookDiv.appendChild(ph);
     }
-
     var label=document.createElement('div');
     label.className='sg-label';
     label.innerHTML='<div class="sg-en">'+esc(book.short)+'</div>'
       +'<div class="sg-ko">'+esc(book.ko||'')+'</div>'
       +'<div class="sg-au">'+esc(book.author||'')+'</div>';
-
     card.appendChild(bookDiv);
     card.appendChild(label);
-
     card.addEventListener('click',function(){
       window.parent.postMessage({
         type:'streamlit:setComponentValue',
@@ -106,24 +92,21 @@ function renderGrid(books){
         dataType:'json'
       },'*');
     });
-
     grid.appendChild(card);
   });
-
   root.innerHTML='';
   root.appendChild(grid);
   sendHeight();
 }
 
-// 1. 준비 완료 알림
-window.parent.postMessage({type:'streamlit:componentReady',apiVersion:1},'*');
-
-// 2. Streamlit 렌더 메시지 수신
+// 리스너를 먼저 등록한 뒤 componentReady 전송 (타이밍 버그 방지)
 window.addEventListener('message',function(e){
   var msg=e.data;
   if(!msg||msg.type!=='streamlit:render')return;
   renderGrid((msg.args&&msg.args.books)||[]);
 });
+
+window.parent.postMessage({type:'streamlit:componentReady',apiVersion:1},'*');
 </script>
 </body>
 </html>

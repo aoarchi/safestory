@@ -1,13 +1,13 @@
 import json
-import os
 import streamlit as st
 import streamlit.components.v1 as stc
 import requests
 import db
 
+# jsDelivr CDN으로 서빙 — Streamlit Cloud 로컬 path 프록시 문제 우회
 _GRID_COMPONENT = stc.declare_component(
     "book_grid",
-    path=os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "components", "book_grid"),
+    url="https://cdn.jsdelivr.net/gh/aoarchi/safestory@master/components/book_grid/index.html",
 )
 
 _HIDE_CHROME = """
