@@ -228,93 +228,82 @@ def _books(topic: str, n: int = 32) -> list:
     return collected[:n]
 
 
-def _card(book: dict, idx: int) -> str:
-    bid     = book["id"]
-    title   = book["title"]
-    short   = title[:22] + "…" if len(title) > 22 else title
-    ko      = _KO_TITLES.get(bid, "")
-    authors = book.get("authors", [])
-    author  = authors[0]["name"].split(",")[0] if authors else ""
-    cover   = book.get("formats", {}).get("image/jpeg", "")
-    tilts   = [-4, 1, -2, 3, 0, -1, 2, -3, 1, 0]
-    tilt    = tilts[idx % len(tilts)]
-    p       = _PALETTES[idx % len(_PALETTES)]
+# onclick은 st.markdown 메인 DOM에서 실행되므로 window.parent 불필요 — document 직접 접근
+_CLICK_JS = (
+    "(function(bid){"
+    "var i=document.querySelector('[aria-label=bcr]');"
+    "if(!i)return;"
+    "var s=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;"
+    "s.call(i,bid);"
+    "i.dispatchEvent(new Event('input',{bubbles:true}));"
+    "})(this.dataset.bid)"
+)
 
-    if cover:
-        inner = (
-            f'<img src="{cover}" alt="{short}" loading="lazy" '
-            f'style="width:100%;height:100%;object-fit:cover;display:block;">'
+_GRID_CSS = """<style>
+.sg-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:20px 12px;padding:8px 0 40px;}
+.sg-card{cursor:pointer;}
+.sg-book{width:100%;aspect-ratio:108/157;border-radius:2px 6px 6px 2px;overflow:hidden;
+  box-shadow:2px 4px 12px rgba(0,0,0,.22),0 1px 3px rgba(0,0,0,.1);
+  transition:transform .2s,box-shadow .2s;position:relative;background:#ddd;}
+.sg-card:hover .sg-book{
+  transform:translateY(-10px) scale(1.06) !important;
+  box-shadow:4px 18px 36px rgba(0,0,0,.28);}
+.sg-spine{position:absolute;left:0;top:0;bottom:0;width:6px;
+  background:rgba(0,0,0,.18);z-index:2;}
+.sg-label{margin-top:6px;}
+.sg-en{font-size:.78rem;font-weight:700;line-height:1.3;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#3d2b1f;}
+.sg-ko{font-size:.7rem;font-weight:600;color:#5a3e2b;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:1.1em;}
+.sg-au{font-size:.6rem;color:#888;white-space:nowrap;overflow:hidden;
+  text-overflow:ellipsis;margin-bottom:20px;}
+@media(max-width:700px){.sg-grid{grid-template-columns:repeat(4,1fr);gap:12px 8px;}}
+</style>"""
+
+
+def _grid_markdown(books: list) -> str:
+    tilts = [-4, 1, -2, 3, 0, -1, 2, -3, 1, 0]
+    cards = []
+    for idx, book in enumerate(books):
+        bid     = book["id"]
+        title   = book["title"]
+        short   = title[:22] + "…" if len(title) > 22 else title
+        ko      = _KO_TITLES.get(bid, "")
+        authors = book.get("authors", [])
+        author  = authors[0]["name"].split(",")[0] if authors else ""
+        cover   = book.get("formats", {}).get("image/jpeg", "")
+        tilt    = tilts[idx % len(tilts)]
+        p       = _PALETTES[idx % len(_PALETTES)]
+
+        if cover:
+            inner = (
+                f'<img src="{cover}" alt="" loading="lazy" '
+                f'style="width:100%;height:100%;object-fit:cover;display:block;">'
+            )
+        else:
+            inner = (
+                f'<div style="width:100%;height:100%;'
+                f'background:linear-gradient(160deg,{p[0]},{p[1]});'
+                f'display:flex;flex-direction:column;justify-content:space-between;padding:12px 8px;">'
+                f'<span style="color:#fff;font-size:.62rem;font-weight:700;'
+                f'line-height:1.4;text-align:center;">{short}</span>'
+                f'<span style="color:rgba(255,255,255,.65);font-size:.52rem;'
+                f'text-align:center;">{author}</span></div>'
+            )
+
+        ko_line = f'<div class="sg-ko">{ko}</div>' if ko else '<div class="sg-ko"></div>'
+        cards.append(
+            f'<div class="sg-card" data-bid="{bid}" onclick="{_CLICK_JS}">'
+            f'<div class="sg-book" style="transform:rotate({tilt}deg);">'
+            f'<div class="sg-spine"></div>{inner}</div>'
+            f'<div class="sg-label">'
+            f'<div class="sg-en">{short}</div>'
+            f'{ko_line}'
+            f'<div class="sg-au">{author}</div>'
+            f'</div></div>'
         )
-    else:
-        inner = (
-            f'<div style="width:100%;height:100%;'
-            f'background:linear-gradient(160deg,{p[0]},{p[1]});'
-            f'display:flex;flex-direction:column;justify-content:space-between;padding:12px 8px;">'
-            f'<span style="color:#fff;font-size:.62rem;font-weight:700;'
-            f'line-height:1.4;text-align:center;">{short}</span>'
-            f'<span style="color:rgba(255,255,255,.65);font-size:.52rem;'
-            f'text-align:center;">{author}</span></div>'
-        )
 
-    ko_line = f'<div class="ko">{ko}</div>' if ko else '<div class="ko"></div>'
-
-    return (
-        f'<div class="card-wrap" data-bid="{bid}">'
-        f'<div class="book" style="transform:rotate({tilt}deg);" title="{title}">'
-        f'<div class="spine"></div>{inner}</div>'
-        f'<div class="label">'
-        f'<div class="en">{short}</div>'
-        f'{ko_line}'
-        f'<div class="au">{author}</div>'
-        f'</div>'
-        f'</div>'
-    )
-
-
-def _grid_html(books: list) -> str:
-    cards = "\n".join(_card(b, i) for i, b in enumerate(books))
-    return f"""<!DOCTYPE html><html><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<style>
-  *{{box-sizing:border-box;margin:0;padding:0}}
-  body{{background:#f0e6d3;padding:16px 16px 40px;font-family:-apple-system,sans-serif;}}
-  .grid{{display:grid;grid-template-columns:repeat(8,1fr);gap:20px 12px;}}
-  .card-wrap{{cursor:pointer;}}
-  .card-wrap:hover .book{{transform:rotate(0deg) translateY(-10px) scale(1.06) !important;
-               box-shadow:4px 18px 36px rgba(0,0,0,.28);z-index:30;}}
-  .book{{width:100%;aspect-ratio:108/157;border-radius:2px 6px 6px 2px;overflow:hidden;
-         box-shadow:2px 4px 12px rgba(0,0,0,.22),0 1px 3px rgba(0,0,0,.1);
-         transition:transform .2s,box-shadow .2s;
-         position:relative;background:#ddd;}}
-  .spine{{position:absolute;left:0;top:0;bottom:0;width:6px;
-          background:rgba(0,0,0,.18);z-index:2;}}
-  .label{{margin-top:6px;}}
-  .en{{font-size:.78rem;font-weight:700;line-height:1.3;white-space:nowrap;
-       overflow:hidden;text-overflow:ellipsis;color:#3d2b1f;}}
-  .ko{{font-size:.7rem;font-weight:600;color:#5a3e2b;white-space:nowrap;
-       overflow:hidden;text-overflow:ellipsis;min-height:1.1em;}}
-  .au{{font-size:.6rem;color:#888;white-space:nowrap;overflow:hidden;
-       text-overflow:ellipsis;margin-bottom:20px;}}
-  @media(max-width:700px){{
-    .grid{{grid-template-columns:repeat(4,1fr);gap:12px 8px;}}
-  }}
-</style></head><body>
-  <div class="grid">{cards}</div>
-<script>
-  document.querySelectorAll('.card-wrap').forEach(function(el) {{
-    el.addEventListener('click', function() {{
-      var bid = this.dataset.bid;
-      var inp = window.parent.document.querySelector('input[aria-label="bcr"]');
-      if (!inp) return;
-      var setter = Object.getOwnPropertyDescriptor(
-        window.parent.HTMLInputElement.prototype, 'value'
-      ).set;
-      setter.call(inp, bid);
-      inp.dispatchEvent(new Event('input', {{bubbles: true}}));
-    }});
-  }});
-</script>
-</body></html>"""
+    return _GRID_CSS + '<div class="sg-grid">' + "".join(cards) + "</div>"
 
 
 def _open_book(user: dict, gid: int) -> None:
@@ -421,7 +410,5 @@ def show(user: dict):
             "cover":  book.get("formats", {}).get("image/jpeg", ""),
         }
 
-    # 행 수에 맞춰 높이 계산 (행당 ~360px)
-    n_rows  = -(-len(books) // 8)
-    height  = n_rows * 360 + 80
-    st.components.v1.html(_grid_html(books), height=height, scrolling=False)
+    # st.markdown = 메인 DOM 렌더링 → onclick이 iframe 없이 바로 동작
+    st.markdown(_grid_markdown(books), unsafe_allow_html=True)
