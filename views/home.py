@@ -21,7 +21,7 @@ _PALETTES = [
 
 
 @st.cache_data(ttl=3600, show_spinner=False)
-def _books(n: int = 30) -> list:
+def _books(n: int = 32) -> list:
     collected, seen = [], set()
     for topic in ["fairy+tales", "children%27s+stories", "fables", "folklore"]:
         if len(collected) >= n:
@@ -83,7 +83,7 @@ def show(user: dict):
     st.markdown(_HIDE_CHROME, unsafe_allow_html=True)
 
     with st.spinner(""):
-        books = _books(30)
+        books = _books(32)
 
     cards_html = "\n".join(_card(b, i) for i, b in enumerate(books))
 
