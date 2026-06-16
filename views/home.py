@@ -14,6 +14,9 @@ section[data-testid="stSidebar"] { display:none !important; }
 [data-testid="stVerticalBlock"], section.main > div {
     background: #f0e6d3 !important;
 }
+/* 컬럼 내부 패딩 제거 → SafeStory / SEARCH 좌측 정렬 통일 */
+[data-testid="stHorizontalBlock"] { gap: 0 !important; }
+[data-testid="column"] { padding: 0 !important; min-width: 0 !important; }
 /* 검색창 — Streamlit 기본 스타일 완전 제거 */
 div[data-testid="stTextInput"],
 div[data-testid="stTextInput"] > div,
@@ -274,12 +277,12 @@ def show(user: dict):
     col_logo, col_gear = st.columns([10, 1])
     with col_logo:
         st.markdown(
-            "<div style='padding:18px 16px 0;font-size:1.25rem;font-weight:800;"
-            "color:#3d2b1f;background:#f0e6d3;'>SafeStory</div>",
+            "<div style='padding:18px 0 0 20px;font-size:1.25rem;font-weight:800;"
+            "color:#3d2b1f;'>SafeStory</div>",
             unsafe_allow_html=True,
         )
     with col_gear:
-        st.markdown("<div style='padding-top:14px;background:#f0e6d3;'>",
+        st.markdown("<div style='padding-top:14px;text-align:right;padding-right:8px;'>",
                     unsafe_allow_html=True)
         if st.button("⚙️", key="gear"):
             st.session_state.show_nav = not st.session_state.get("show_nav", False)
@@ -299,7 +302,7 @@ def show(user: dict):
                     st.rerun()
 
     # ── 검색창 ────────────────────────────────────────────────────────────────
-    st.markdown("<div style='padding:14px 16px 6px;'>", unsafe_allow_html=True)
+    st.markdown("<div style='padding:14px 20px 6px;'>", unsafe_allow_html=True)
     query = st.text_input(
         "mood",
         placeholder="SEARCH",
