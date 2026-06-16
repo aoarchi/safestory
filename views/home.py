@@ -14,15 +14,7 @@ section[data-testid="stSidebar"] { display:none !important; }
 [data-testid="stVerticalBlock"], section.main > div {
     background: #f0e6d3 !important;
 }
-/* gear 버튼 우상단 고정 */
-[data-testid="element-container"]:has(.gear-anchor)
-  + [data-testid="element-container"] {
-    position: absolute;
-    top: 10px;
-    right: 12px;
-    z-index: 50;
-}
-/* baseweb 입력 내부 padding 제거 → SEARCH 텍스트 왼쪽 정렬 */
+/* baseweb 입력 내부 padding 제거 */
 div[data-baseweb="base-input"] { padding: 0 !important; }
 /* 검색창 — Streamlit 기본 스타일 완전 제거 */
 div[data-testid="stTextInput"],
@@ -280,17 +272,18 @@ def _grid_html(books: list) -> str:
 def show(user: dict):
     st.markdown(_HIDE_CHROME, unsafe_allow_html=True)
 
-    # ── 타이틀 (full-width, columns 없음) ─────────────────────────────────────
-    st.markdown(
-        "<div style='padding:18px 20px 0;font-size:1.25rem;font-weight:800;"
-        "color:#3d2b1f;'>SafeStory</div>",
-        unsafe_allow_html=True,
-    )
-    # gear 버튼 — CSS로 우상단 절대 위치
-    st.markdown("<div class='gear-anchor'></div>", unsafe_allow_html=True)
-    if st.button("⚙️", key="gear"):
-        st.session_state.show_nav = not st.session_state.get("show_nav", False)
-        st.rerun()
+    # ── 헤더: columns([10,1]) — gear 오른쪽 고정 ──────────────────────────────
+    col_logo, col_gear = st.columns([10, 1])
+    with col_logo:
+        st.markdown(
+            "<div style='padding-top:18px;font-size:1.25rem;font-weight:800;"
+            "color:#3d2b1f;'>SafeStory</div>",
+            unsafe_allow_html=True,
+        )
+    with col_gear:
+        if st.button("⚙️", key="gear"):
+            st.session_state.show_nav = not st.session_state.get("show_nav", False)
+            st.rerun()
 
     if st.session_state.get("show_nav"):
         ncols = st.columns(5)
@@ -304,15 +297,17 @@ def show(user: dict):
                     st.session_state.show_nav = False
                     st.rerun()
 
-    # ── 검색창 (같은 20px 왼쪽 기준) ──────────────────────────────────────────
-    st.markdown("<div style='padding:14px 20px 6px;'>", unsafe_allow_html=True)
-    query = st.text_input(
-        "mood",
-        placeholder="SEARCH",
-        label_visibility="collapsed",
-        key="mood_q",
-    )
-    st.markdown("</div>", unsafe_allow_html=True)
+    # ── 검색창: 같은 [10,1] columns → SafeStory와 자동 정렬 ───────────────────
+    col_search, _ = st.columns([10, 1])
+    with col_search:
+        st.markdown("<div style='padding-top:10px;'>", unsafe_allow_html=True)
+        query = st.text_input(
+            "mood",
+            placeholder="SEARCH",
+            label_visibility="collapsed",
+            key="mood_q",
+        )
+        st.markdown("</div>", unsafe_allow_html=True)
 
     # ── 책 그리드 ─────────────────────────────────────────────────────────────
     if query and query.strip():
