@@ -1,3 +1,4 @@
+import html as _html
 import json
 import streamlit as st
 import requests
@@ -209,52 +210,90 @@ def _books(topic: str, n: int = 32) -> list:
 
 
 def _book_grid(books: list, user: dict) -> None:
+    # 책 정보를 session_state에 등록해 두어 클릭 후 rerun 시 조회 가능
+    registry = st.session_state.setdefault("book_registry", {})
+    for book in books:
+        bid     = book["id"]
+        authors = book.get("authors", [])
+        registry[bid] = {
+            "title":  book["title"],
+            "author": authors[0]["name"].split(",")[0] if authors else "",
+            "cover":  book.get("formats", {}).get("image/jpeg", ""),
+        }
+
     n_cols = 8
     for row_start in range(0, len(books), n_cols):
         row = books[row_start:row_start + n_cols]
         cols = st.columns(n_cols, gap="small")
         for col, book in zip(cols, row):
             bid    = book["id"]
-            cover  = book.get("formats", {}).get("image/jpeg", "")
-            title  = book["title"]
-            short  = title[:14] + "…" if len(title) > 14 else title
-            authors = book.get("authors", [])
-            author  = authors[0]["name"].split(",")[0] if authors else ""
+            cover  = registry[bid]["cover"]
+            short  = _html.escape(
+                book["title"][:14] + "…" if len(book["title"]) > 14 else book["title"]
+            )
+            author = _html.escape(registry[bid]["author"])
+            hue    = bid % 360
+
+            img_inner = (
+                f'<img src="{cover}" style="width:100%;height:100%;object-fit:cover;display:block;">'
+                if cover else
+                f'<div style="width:100%;height:100%;display:flex;align-items:center;'
+                f'justify-content:center;padding:6px;">'
+                f'<span style="color:#fff;font-size:.55rem;font-weight:700;'
+                f'text-align:center;line-height:1.3;">{short}</span></div>'
+            )
 
             with col:
-                hue = bid % 360
-                if cover:
-                    img_inner = (
-                        f'<img src="{cover}" style="width:100%;height:100%;'
-                        f'object-fit:cover;display:block;border-radius:3px 6px 6px 3px;">'
-                    )
-                else:
-                    img_inner = (
-                        f'<div style="width:100%;height:100%;display:flex;align-items:center;'
-                        f'justify-content:center;padding:6px;">'
-                        f'<span style="color:#fff;font-size:.55rem;font-weight:700;'
-                        f'text-align:center;line-height:1.3;">{short}</span></div>'
-                    )
-
                 st.markdown(
-                    f'<div style="background:hsl({hue},55%,58%);height:320px;overflow:hidden;'
-                    f'border-radius:3px 6px 6px 3px;box-shadow:2px 4px 8px rgba(0,0,0,.18);'
-                    f'margin-bottom:5px;">{img_inner}</div>'
+                    f'<div onclick="window.location.search=\'?gb={bid}\'" '
+                    f'style="cursor:pointer;background:hsl({hue},55%,58%);height:320px;'
+                    f'overflow:hidden;border-radius:3px 6px 6px 3px;'
+                    f'box-shadow:2px 4px 8px rgba(0,0,0,.18);margin-bottom:5px;'
+                    f'transition:transform .15s,box-shadow .15s;"'
+                    f'onmouseover="this.style.transform=\'translateY(-4px)\';'
+                    f'this.style.boxShadow=\'4px 12px 24px rgba(0,0,0,.28)\'"'
+                    f'onmouseout="this.style.transform=\'\';'
+                    f'this.style.boxShadow=\'2px 4px 8px rgba(0,0,0,.18)\'">'
+                    f'{img_inner}</div>'
                     f"<div style='font-size:.6rem;font-weight:700;line-height:1.2;height:2.4em;"
                     f"overflow:hidden;margin-bottom:1px;'>{short}</div>"
-                    f"<div style='font-size:.55rem;color:#888;height:1.4em;overflow:hidden;"
-                    f"margin-bottom:4px;'>{author}</div>",
+                    f"<div style='font-size:.55rem;color:#888;height:1.4em;overflow:hidden;'>"
+                    f"{author}</div>",
                     unsafe_allow_html=True,
                 )
 
-                if st.button("읽기", key=f"read_{bid}", use_container_width=True):
-                    db.add_approved_book(user["id"], bid, title, author, cover)
-                    st.session_state["quick_book_id"] = bid
-                    st.session_state.app_mode = "reader"
-                    st.rerun()
-
 
 def show(user: dict):
+    # 책 표지 클릭 시 query param ?gb={id} 로 전달됨
+    if "gb" in st.query_params:
+        try:
+            gid = int(st.query_params["gb"])
+            registry = st.session_state.get("book_registry", {})
+            if gid in registry:
+                b = registry[gid]
+                title, author, cover = b["title"], b["author"], b["cover"]
+            else:
+                fallback = next((b for b in _FALLBACK_BOOKS if b["id"] == gid), None)
+                if fallback:
+                    auths  = fallback.get("authors", [])
+                    title  = fallback["title"]
+                    author = auths[0]["name"].split(",")[0] if auths else ""
+                    cover  = fallback.get("formats", {}).get("image/jpeg", "")
+                else:
+                    r      = requests.get(f"https://gutendex.com/books/{gid}/", timeout=6)
+                    b      = r.json()
+                    auths  = b.get("authors", [])
+                    title  = b.get("title", f"Book {gid}")
+                    author = auths[0]["name"].split(",")[0] if auths else ""
+                    cover  = b.get("formats", {}).get("image/jpeg", "")
+            db.add_approved_book(user["id"], gid, title, author, cover)
+            st.session_state["quick_book_id"] = gid
+            st.session_state.app_mode = "reader"
+            st.query_params.clear()
+            st.rerun()
+        except Exception:
+            st.query_params.clear()
+
     st.markdown(_HIDE_CHROME, unsafe_allow_html=True)
 
     # ── 헤더: columns([10,1]) — gear 오른쪽 고정 ──────────────────────────────
