@@ -43,7 +43,7 @@ function esc(s){
 }
 function sendHeight(){
   requestAnimationFrame(function(){
-    window.parent.postMessage({type:'streamlit:setFrameHeight',height:document.documentElement.scrollHeight},'*');
+    window.parent.postMessage({isStreamlitMessage:true,type:'streamlit:setFrameHeight',height:document.documentElement.scrollHeight},'*');
   });
 }
 function renderGrid(books){
@@ -87,6 +87,7 @@ function renderGrid(books){
     card.appendChild(label);
     card.addEventListener('click',function(){
       window.parent.postMessage({
+        isStreamlitMessage:true,
         type:'streamlit:setComponentValue',
         value:this.dataset.bid,
         dataType:'json'
@@ -106,7 +107,7 @@ window.addEventListener('message',function(e){
   renderGrid((msg.args&&msg.args.books)||[]);
 });
 
-window.parent.postMessage({type:'streamlit:componentReady',apiVersion:1},'*');
+window.parent.postMessage({isStreamlitMessage:true,type:'streamlit:componentReady',apiVersion:1},'*');
 </script>
 </body>
 </html>
