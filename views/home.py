@@ -237,7 +237,7 @@ def _book_grid(books: list, user: dict) -> None:
                     )
 
                 st.markdown(
-                    f'<div style="background:hsl({hue},55%,58%);height:110px;overflow:hidden;'
+                    f'<div style="background:hsl({hue},55%,58%);height:157px;overflow:hidden;'
                     f'border-radius:3px 6px 6px 3px;box-shadow:2px 4px 8px rgba(0,0,0,.18);'
                     f'margin-bottom:5px;">{img_inner}</div>'
                     f"<div style='font-size:.6rem;font-weight:700;line-height:1.2;height:2.4em;"
