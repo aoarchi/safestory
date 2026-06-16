@@ -159,6 +159,7 @@ def _show_quick_book(user: dict, gid: int) -> None:
     """홈에서 책을 클릭했을 때 바로 해당 책을 여는 뷰."""
     if st.button("← 홈으로"):
         del st.session_state["quick_book_id"]
+        st.session_state["home_visit_count"] = st.session_state.get("home_visit_count", 0) + 1
         st.session_state.app_mode = "home"
         st.rerun()
 
