@@ -1,6 +1,7 @@
 import json
 import streamlit as st
 import requests
+import db
 
 _HIDE_CHROME = """
 <style>
@@ -49,13 +50,6 @@ div[data-testid="stTextInput"] > label { display:none !important; }
 [data-testid="stStatusWidget"] { display:none !important; }
 </style>
 """
-
-_PALETTES = [
-    ("#e8c4a0","#c9956a"),("#d4e8c2","#8fbe6e"),("#c4cfe8","#6a82be"),
-    ("#e8c4d4","#be6a95"),("#e8dfc4","#bea96a"),("#c4e8e8","#6abebe"),
-    ("#d4c4e8","#8a6abe"),("#e8c4c4","#be6a6a"),("#c4e8d0","#6abe8a"),
-    ("#e0e8c4","#9abe6a"),
-]
 
 _KEYWORD_MAP = {
     "잠자기": "fairy+tales",      "잠자리": "fairy+tales",
@@ -205,10 +199,8 @@ def _books(topic: str, n: int = 32) -> list:
                     collected.append(b)
         except Exception:
             pass
-    # API 결과가 전혀 없으면 하드코딩 폴백 사용
     if not collected:
         return _FALLBACK_BOOKS[:n]
-    # 그래도 모자라면 폴백으로 채움
     if len(collected) < n:
         for fb in _FALLBACK_BOOKS:
             if fb["id"] not in seen and len(collected) < n:
@@ -216,58 +208,46 @@ def _books(topic: str, n: int = 32) -> list:
     return collected[:n]
 
 
-def _card(book: dict, idx: int) -> str:
-    cover   = book.get("formats", {}).get("image/jpeg", "")
-    title   = book["title"]
-    short   = title[:28] + "…" if len(title) > 28 else title
-    authors = book.get("authors", [])
-    author  = authors[0]["name"].split(",")[0] if authors else ""
-    tilts   = [-4, 1, -2, 3, 0, -1, 2, -3, 1, 0]
-    tilt    = tilts[idx % len(tilts)]
-    p       = _PALETTES[idx % len(_PALETTES)]
+def _book_grid(books: list, user: dict) -> None:
+    n_cols = 4
+    for row_start in range(0, len(books), n_cols):
+        row = books[row_start:row_start + n_cols]
+        cols = st.columns(n_cols, gap="small")
+        for col, book in zip(cols, row):
+            bid    = book["id"]
+            cover  = book.get("formats", {}).get("image/jpeg", "")
+            title  = book["title"]
+            short  = title[:22] + "…" if len(title) > 22 else title
+            authors = book.get("authors", [])
+            author  = authors[0]["name"].split(",")[0] if authors else ""
 
-    if cover:
-        inner = (f'<img src="{cover}" alt="{short}" loading="lazy" '
-                 f'style="width:100%;height:100%;object-fit:cover;display:block;">')
-    else:
-        inner = f"""<div style="width:100%;height:100%;
-            background:linear-gradient(160deg,{p[0]},{p[1]});
-            display:flex;flex-direction:column;justify-content:space-between;padding:12px 8px;">
-          <span style="color:#fff;font-size:.62rem;font-weight:700;
-            line-height:1.4;text-align:center;">{short}</span>
-          <span style="color:rgba(255,255,255,.65);font-size:.52rem;
-            text-align:center;">{author}</span></div>"""
+            with col:
+                if cover:
+                    st.image(cover, use_container_width=True)
+                else:
+                    hue = bid % 360
+                    st.markdown(
+                        f'<div style="background:hsl({hue},55%,58%);height:148px;'
+                        f'border-radius:4px 8px 8px 4px;display:flex;align-items:center;'
+                        f'justify-content:center;padding:10px;margin-bottom:4px;'
+                        f'box-shadow:2px 4px 10px rgba(0,0,0,.18);">'
+                        f'<span style="color:#fff;font-size:.65rem;font-weight:700;'
+                        f'text-align:center;line-height:1.4;">{short}</span></div>',
+                        unsafe_allow_html=True,
+                    )
 
-    return f"""<div class="book" style="transform:rotate({tilt}deg);" title="{title}">
-      <div class="spine"></div>{inner}</div>"""
+                st.markdown(
+                    f"<div style='font-size:.72rem;font-weight:700;line-height:1.3;"
+                    f"margin:4px 0 1px;'>{short}</div>"
+                    f"<div style='font-size:.62rem;color:#888;margin-bottom:4px;'>{author}</div>",
+                    unsafe_allow_html=True,
+                )
 
-
-def _grid_html(books: list) -> str:
-    cards = "\n".join(_card(b, i) for i, b in enumerate(books))
-    return f"""<!DOCTYPE html><html><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<style>
-  *{{box-sizing:border-box;margin:0;padding:0}}
-  body{{background:#f0e6d3;padding:16px 16px 60px;font-family:-apple-system,sans-serif;}}
-  .grid{{display:grid;grid-template-columns:repeat(auto-fill,minmax(108px,1fr));
-         gap:24px;justify-items:center;}}
-  .book{{width:108px;height:157px;border-radius:2px 6px 6px 2px;overflow:hidden;
-         box-shadow:2px 4px 12px rgba(0,0,0,.22),0 1px 3px rgba(0,0,0,.1);
-         cursor:pointer;transition:transform .2s,box-shadow .2s;
-         position:relative;background:#ddd;}}
-  .spine{{position:absolute;left:0;top:0;bottom:0;width:6px;
-          background:rgba(0,0,0,.18);z-index:2;}}
-  .book:hover{{transform:rotate(0deg) translateY(-10px) scale(1.06) !important;
-               box-shadow:4px 18px 36px rgba(0,0,0,.28);z-index:30;}}
-  @media(max-width:600px){{
-    body{{padding:10px 10px 40px;}}
-    .grid{{grid-template-columns:repeat(4,1fr);gap:10px;}}
-    .book{{width:100%;height:0;padding-bottom:145%;position:relative;}}
-    .book .spine,.book img,.book>div{{position:absolute;top:0;left:0;width:100%;height:100%;}}
-  }}
-</style></head><body>
-  <div class="grid">{cards}</div>
-</body></html>"""
+                if st.button("📖 읽기", key=f"read_{bid}", use_container_width=True):
+                    db.add_approved_book(user["id"], bid, title, author, cover)
+                    st.session_state["quick_book_id"] = bid
+                    st.session_state.app_mode = "reader"
+                    st.rerun()
 
 
 def show(user: dict):
@@ -298,7 +278,7 @@ def show(user: dict):
                     st.session_state.show_nav = False
                     st.rerun()
 
-    # ── 검색창: 같은 [10,1] columns → SafeStory와 자동 정렬 ───────────────────
+    # ── 검색창 ─────────────────────────────────────────────────────────────────
     col_search, _ = st.columns([10, 1])
     with col_search:
         st.markdown("<div style='padding-top:10px;'>", unsafe_allow_html=True)
@@ -323,4 +303,6 @@ def show(user: dict):
     else:
         books = _books("fairy+tales", 32)
 
-    st.components.v1.html(_grid_html(books), height=1600, scrolling=False)
+    st.markdown("<div style='padding:12px 16px 0;'>", unsafe_allow_html=True)
+    _book_grid(books, user)
+    st.markdown("</div>", unsafe_allow_html=True)

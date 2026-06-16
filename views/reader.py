@@ -155,6 +155,49 @@ def _show_my_books(user: dict) -> None:
     _bilingual_reader(chunks[part_idx], f"book_{gid}_{part_idx}")
 
 
+def _show_quick_book(user: dict, gid: int) -> None:
+    """홈에서 책을 클릭했을 때 바로 해당 책을 여는 뷰."""
+    if st.button("← 홈으로"):
+        del st.session_state["quick_book_id"]
+        st.session_state.app_mode = "home"
+        st.rerun()
+
+    books = db.get_approved_books(user["id"])
+    book  = next((b for b in books if b["gutenberg_id"] == gid), None)
+    if not book:
+        st.error("책 정보를 찾을 수 없어요.")
+        return
+
+    col_info, col_cover = st.columns([3, 1])
+    with col_info:
+        st.markdown(f"## 📖 {book['title']}")
+        st.caption(f"저자: {book['author']}  ·  출처: Project Gutenberg (공개 도메인)")
+    with col_cover:
+        if book.get("cover_url"):
+            st.image(book["cover_url"], width=100)
+
+    with st.spinner("책 내용 불러오는 중..."):
+        text = gb.fetch_book_text(gid)
+
+    if not text:
+        st.error("책 내용을 불러올 수 없어요. 잠시 후 다시 시도해주세요.")
+        if st.button("🔄 다시 시도", key="retry_quick"):
+            gb.fetch_book_text.clear()
+            st.rerun()
+        return
+
+    chunks = gb.get_chunks(text)
+    part_idx = 0
+    if len(chunks) > 1:
+        part_idx = st.selectbox(
+            f"파트 선택  (총 {len(chunks)}파트)", range(len(chunks)),
+            format_func=lambda i: f"파트 {i + 1}",
+            key=f"quick_part_{gid}",
+        )
+
+    _bilingual_reader(chunks[part_idx], f"quick_{gid}_{part_idx}")
+
+
 def show(user: dict):
     with st.sidebar:
         st.markdown("### 📖 동화 읽기")
@@ -168,6 +211,12 @@ def show(user: dict):
     except Exception:
         st.error("OpenAI API 키가 설정되지 않았습니다. `.streamlit/secrets.toml`에 키를 추가해주세요.")
         st.code('OPENAI_API_KEY = "sk-..."', language="toml")
+        return
+
+    # 홈에서 책 표지 클릭 시 바로 열기
+    quick_id = st.session_state.get("quick_book_id")
+    if quick_id:
+        _show_quick_book(user, quick_id)
         return
 
     tab_and, tab_eng, tab_my = st.tabs(["🌊 안데르센", "🏰 영국 동화", "📚 내 책장"])
