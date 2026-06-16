@@ -113,6 +113,23 @@ def fetch_english_fairy_tales() -> dict[str, str]:
     return stories
 
 
+@st.cache_data(ttl=3600, show_spinner=False)
+def fetch_book_text(gutenberg_id: int) -> str:
+    """Fetch any Gutenberg book's plain text by ID, stripped of boilerplate."""
+    url = f"https://www.gutenberg.org/cache/epub/{gutenberg_id}/pg{gutenberg_id}.txt"
+    try:
+        resp = requests.get(url, timeout=30)
+        resp.encoding = "utf-8"
+        raw = resp.text
+    except Exception:
+        return ""
+
+    start = re.search(r"\*{3} START OF .+? \*{3}", raw)
+    end   = re.search(r"\*{3} END OF .+? \*{3}", raw)
+    body  = raw[start.end() if start else 0 : end.start() if end else len(raw)]
+    return body.strip()
+
+
 def get_chunks(text: str, chars: int = 2800) -> list[str]:
     """Split story text into paragraph-aligned chunks for TTS."""
     paragraphs = [p.strip() for p in text.split("\n\n") if p.strip()]
