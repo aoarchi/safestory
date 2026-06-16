@@ -16,13 +16,15 @@ section[data-testid="stSidebar"] { display:none !important; }
 }
 /* 검색창 */
 div[data-testid="stTextInput"] input {
-    background: #fff !important;
+    background: #f0e6d3 !important;
     border: none !important;
-    border-radius: 24px !important;
-    padding: 14px 20px !important;
+    border-bottom: 1.5px solid #c4a882 !important;
+    border-radius: 0 !important;
+    padding: 10px 4px !important;
     font-size: 1rem !important;
-    box-shadow: 0 2px 12px rgba(0,0,0,.1) !important;
+    box-shadow: none !important;
     color: #3d2b1f !important;
+    letter-spacing: .08em !important;
 }
 div[data-testid="stTextInput"] input::placeholder { color: #b09a8a !important; }
 div[data-testid="stTextInput"] > label { display:none !important; }
@@ -285,7 +287,7 @@ def show(user: dict):
     st.markdown("<div style='padding:14px 16px 6px;'>", unsafe_allow_html=True)
     query = st.text_input(
         "mood",
-        placeholder="지금 기분이나 상황을 입력해보세요  (예: 잠자기 전에, 차분해지고 싶어)",
+        placeholder="SEARCH",
         label_visibility="collapsed",
         key="mood_q",
     )
@@ -293,8 +295,7 @@ def show(user: dict):
 
     # ── 책 그리드 ─────────────────────────────────────────────────────────────
     if query and query.strip():
-        with st.spinner("딱 맞는 책을 찾는 중..."):
-            topic, desc = _gpt_topic(query.strip())
+        topic, desc = _gpt_topic(query.strip())
         st.markdown(
             f"<div style='background:#f0e6d3;padding:4px 16px 8px;"
             f"font-size:.82rem;color:#8b6f5e;'>"
