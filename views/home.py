@@ -1,3 +1,4 @@
+import json
 import streamlit as st
 import requests
 
@@ -9,64 +10,32 @@ footer     { display:none !important; }
 section[data-testid="stSidebar"] { display:none !important; }
 .block-container { padding:0 !important; max-width:100% !important; }
 
-/* 카테고리 pills 스타일 */
-div[data-testid="stRadio"] > div {
-    display: flex !important;
-    flex-direction: row !important;
-    flex-wrap: nowrap !important;
-    overflow-x: auto !important;
-    gap: 8px !important;
-    padding: 12px 16px 4px !important;
-    background: #f0e6d3 !important;
-    scrollbar-width: none !important;
-}
-div[data-testid="stRadio"] > div::-webkit-scrollbar { display:none !important; }
-div[data-testid="stRadio"] label {
-    background: #e0d0bc !important;
-    border-radius: 20px !important;
-    padding: 6px 18px !important;
-    white-space: nowrap !important;
-    cursor: pointer !important;
-    font-size: 0.82rem !important;
-    color: #4a3728 !important;
+/* 검색창 */
+div[data-testid="stTextInput"] input {
+    background: #fff !important;
     border: none !important;
-    font-weight: 500 !important;
+    border-radius: 24px !important;
+    padding: 14px 20px !important;
+    font-size: 1rem !important;
+    box-shadow: 0 2px 12px rgba(0,0,0,.1) !important;
+    color: #3d2b1f !important;
 }
-div[data-testid="stRadio"] label:has(input:checked) {
-    background: #3d2b1f !important;
-    color: #fff !important;
-    font-weight: 700 !important;
-}
-div[data-testid="stRadio"] input[type="radio"] { display:none !important; }
-div[data-testid="stRadio"] > label { display:none !important; }
+div[data-testid="stTextInput"] input::placeholder { color: #b09a8a !important; }
+div[data-testid="stTextInput"] > label { display:none !important; }
 
-/* 설정 버튼 우상단 */
-div[data-testid="column"]:last-child button {
-    background: transparent !important;
+/* 추천 칩 버튼 */
+.chip-row button {
+    background: #e8ddd0 !important;
     border: none !important;
-    color: #8b6f5e !important;
-    font-size: 1.1rem !important;
+    border-radius: 16px !important;
+    padding: 4px 14px !important;
+    font-size: 0.78rem !important;
+    color: #5a3e2b !important;
+    white-space: nowrap !important;
 }
+.chip-row button:hover { background: #d4c4b0 !important; }
 </style>
 """
-
-CATEGORIES = [
-    {"key": "bedtime",   "name": "잠자기 전",       "topic": "fairy+tales"},
-    {"key": "travel",    "name": "여행하면서",       "topic": "adventure+stories"},
-    {"key": "morning",   "name": "신나는 아침",      "topic": "children%27s+stories"},
-    {"key": "calm",      "name": "차분하게",         "topic": "nature"},
-    {"key": "funny",     "name": "웃긴 이야기",      "topic": "humor"},
-    {"key": "animals",   "name": "동물 친구들",      "topic": "animals"},
-    {"key": "adventure", "name": "용감한 모험",      "topic": "adventure+stories"},
-    {"key": "world",     "name": "세계 전래동화",    "topic": "folklore"},
-    {"key": "magic",     "name": "마법 이야기",      "topic": "fairy+tales"},
-    {"key": "fables",    "name": "우화·교훈",        "topic": "fables"},
-    {"key": "rainy",     "name": "비 오는 날",       "topic": "fairy+tales"},
-    {"key": "family",    "name": "가족과 함께",      "topic": "children%27s+stories"},
-    {"key": "brave",     "name": "용기가 필요할 때", "topic": "adventure+stories"},
-    {"key": "nature",    "name": "자연 이야기",      "topic": "nature"},
-    {"key": "classic",   "name": "클래식 동화",      "topic": "fairy+tales"},
-]
 
 _PALETTES = [
     ("#e8c4a0","#c9956a"),("#d4e8c2","#8fbe6e"),("#c4cfe8","#6a82be"),
@@ -74,6 +43,78 @@ _PALETTES = [
     ("#d4c4e8","#8a6abe"),("#e8c4c4","#be6a6a"),("#c4e8d0","#6abe8a"),
     ("#e0e8c4","#9abe6a"),
 ]
+
+_SUGGESTIONS = [
+    "잠자기 전에", "긴 여행 중이야", "차분해지고 싶어",
+    "신나는 모험이 듣고 싶어", "동물 이야기", "웃긴 이야기 추천해줘",
+    "공부하기 전에", "비 오는 날",
+]
+
+_KEYWORD_MAP = {
+    "잠자기": "fairy+tales",      "잠자리": "fairy+tales",
+    "포근": "fairy+tales",        "졸려": "fairy+tales",
+    "모험": "adventure+stories",  "여행": "adventure+stories",
+    "신나": "adventure+stories",  "용감": "adventure+stories",
+    "차분": "nature",             "힐링": "nature",
+    "자연": "nature",             "평화": "nature",
+    "동물": "animals",            "귀여": "animals",
+    "웃긴": "humor",              "재미있": "humor",
+    "유머": "humor",              "웃음": "humor",
+    "교훈": "fables",             "우화": "fables",
+    "배움": "fables",             "이솝": "fables",
+    "전래": "folklore",           "세계": "folklore",
+    "공부": "children%27s+stories",
+    "가족": "children%27s+stories",
+    "비 오": "fairy+tales",       "비오": "fairy+tales",
+}
+
+_TOPIC_DESC = {
+    "fairy+tales":           "포근하고 따뜻한 동화",
+    "adventure+stories":     "두근두근 모험 이야기",
+    "nature":                "자연 속 조용한 이야기",
+    "animals":               "귀여운 동물 친구들",
+    "humor":                 "빵 터지는 웃긴 이야기",
+    "fables":                "지혜가 담긴 우화",
+    "folklore":              "세계 각국 전래동화",
+    "children%27s+stories":  "어린이를 위한 이야기",
+}
+
+
+def _keyword_fallback(query: str) -> str:
+    for kw, topic in _KEYWORD_MAP.items():
+        if kw in query:
+            return topic
+    return "fairy+tales"
+
+
+def _gpt_topic(query: str) -> tuple[str, str]:
+    """GPT로 기분 → Gutenberg 토픽 매핑. 실패하면 키워드 폴백."""
+    try:
+        from openai import OpenAI
+        client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
+        resp = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "You are a children's audiobook recommender. "
+                        "Map the user's mood or situation to one Gutenberg topic. "
+                        "Topics: fairy+tales, adventure+stories, nature, animals, "
+                        "humor, fables, folklore, children%27s+stories. "
+                        'Reply ONLY with JSON: {"topic":"...","desc_ko":"...짧은 한국어 설명..."}'
+                    ),
+                },
+                {"role": "user", "content": query},
+            ],
+            temperature=0.2,
+            response_format={"type": "json_object"},
+        )
+        data = json.loads(resp.choices[0].message.content)
+        return data["topic"], data["desc_ko"]
+    except Exception:
+        t = _keyword_fallback(query)
+        return t, _TOPIC_DESC.get(t, "추천 동화")
 
 
 @st.cache_data(ttl=1800, show_spinner=False)
@@ -97,8 +138,7 @@ def _books(topic: str, n: int = 32) -> list:
             page += 1
         except Exception:
             break
-    # 부족하면 fairy tales 보충
-    if len(collected) < n and topic != "fairy+tales":
+    if len(collected) < n:
         try:
             r = requests.get(
                 "https://gutendex.com/books/",
@@ -120,124 +160,78 @@ def _card(book: dict, idx: int) -> str:
     short   = title[:28] + "…" if len(title) > 28 else title
     authors = book.get("authors", [])
     author  = authors[0]["name"].split(",")[0] if authors else ""
-
-    tilts = [-4, 1, -2, 3, 0, -1, 2, -3, 1, 0]
-    tilt  = tilts[idx % len(tilts)]
-    p     = _PALETTES[idx % len(_PALETTES)]
+    tilts   = [-4, 1, -2, 3, 0, -1, 2, -3, 1, 0]
+    tilt    = tilts[idx % len(tilts)]
+    p       = _PALETTES[idx % len(_PALETTES)]
 
     if cover:
         inner = (f'<img src="{cover}" alt="{short}" loading="lazy" '
                  f'style="width:100%;height:100%;object-fit:cover;display:block;">')
     else:
-        inner = f"""
-        <div style="width:100%;height:100%;
-             background:linear-gradient(160deg,{p[0]},{p[1]});
-             display:flex;flex-direction:column;
-             justify-content:space-between;padding:12px 8px;">
+        inner = f"""<div style="width:100%;height:100%;
+            background:linear-gradient(160deg,{p[0]},{p[1]});
+            display:flex;flex-direction:column;justify-content:space-between;padding:12px 8px;">
           <span style="color:#fff;font-size:.62rem;font-weight:700;
             line-height:1.4;text-align:center;">{short}</span>
           <span style="color:rgba(255,255,255,.65);font-size:.52rem;
-            text-align:center;">{author}</span>
-        </div>"""
+            text-align:center;">{author}</span></div>"""
 
-    return f"""
-    <div class="book" style="transform:rotate({tilt}deg);" title="{title}">
-      <div class="spine"></div>
-      {inner}
-    </div>"""
+    return f"""<div class="book" style="transform:rotate({tilt}deg);" title="{title}">
+      <div class="spine"></div>{inner}</div>"""
 
 
 def _grid_html(books: list) -> str:
     cards = "\n".join(_card(b, i) for i, b in enumerate(books))
-    return f"""<!DOCTYPE html>
-<html><head><meta charset="utf-8">
+    return f"""<!DOCTYPE html><html><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <style>
   *{{box-sizing:border-box;margin:0;padding:0}}
-  body{{
-    background:#f0e6d3;
-    padding:20px 16px 60px;
-    font-family:-apple-system,sans-serif;
+  body{{background:#f0e6d3;padding:16px 16px 60px;font-family:-apple-system,sans-serif;}}
+  .grid{{display:grid;grid-template-columns:repeat(auto-fill,minmax(108px,1fr));
+         gap:24px;justify-items:center;}}
+  .book{{width:108px;height:157px;border-radius:2px 6px 6px 2px;overflow:hidden;
+         box-shadow:2px 4px 12px rgba(0,0,0,.22),0 1px 3px rgba(0,0,0,.1);
+         cursor:pointer;transition:transform .2s,box-shadow .2s;
+         position:relative;background:#ddd;}}
+  .spine{{position:absolute;left:0;top:0;bottom:0;width:6px;
+          background:rgba(0,0,0,.18);z-index:2;}}
+  .book:hover{{transform:rotate(0deg) translateY(-10px) scale(1.06) !important;
+               box-shadow:4px 18px 36px rgba(0,0,0,.28);z-index:30;}}
+  @media(max-width:600px){{
+    body{{padding:10px 10px 40px;}}
+    .grid{{grid-template-columns:repeat(4,1fr);gap:10px;}}
+    .book{{width:100%;height:0;padding-bottom:145%;position:relative;}}
+    .book .spine,.book img,.book>div{{position:absolute;top:0;left:0;width:100%;height:100%;}}
   }}
-  .grid{{
-    display:grid;
-    grid-template-columns:repeat(auto-fill,minmax(108px,1fr));
-    gap:24px;
-    justify-items:center;
-  }}
-  .book{{
-    width:108px;
-    height:157px;
-    border-radius:2px 6px 6px 2px;
-    overflow:hidden;
-    box-shadow:2px 4px 12px rgba(0,0,0,.22),0 1px 3px rgba(0,0,0,.1);
-    cursor:pointer;
-    transition:transform .2s ease,box-shadow .2s ease;
-    position:relative;
-    background:#ddd;
-  }}
-  .spine{{
-    position:absolute;left:0;top:0;bottom:0;width:6px;
-    background:rgba(0,0,0,.18);z-index:2;
-  }}
-  .book:hover{{
-    transform:rotate(0deg) translateY(-10px) scale(1.06) !important;
-    box-shadow:4px 18px 36px rgba(0,0,0,.28);z-index:30;
-  }}
-
-  /* 모바일: 4열 고정 */
-  @media (max-width:600px){{
-    body{{ padding:12px 10px 40px; }}
-    .grid{{
-      grid-template-columns:repeat(4,1fr);
-      gap:10px;
-    }}
-    .book{{
-      width:100%;
-      height:0;
-      padding-bottom:145%;
-      position:relative;
-    }}
-    .book .spine,
-    .book img,
-    .book > div{{
-      position:absolute;
-      top:0;left:0;width:100%;height:100%;
-    }}
-  }}
-</style>
-</head>
-<body>
+</style></head><body>
   <div class="grid">{cards}</div>
-</body>
-</html>"""
+</body></html>"""
 
 
 def show(user: dict):
     st.markdown(_HIDE_CHROME, unsafe_allow_html=True)
 
-    # ── 상단: SafeStory 로고 + 설정 버튼 ────────────────────────────────────
+    # ── 헤더 ──────────────────────────────────────────────────────────────────
     col_logo, col_gear = st.columns([10, 1])
     with col_logo:
         st.markdown(
-            "<div style='padding:14px 16px 0;"
-            "font-size:1.2rem;font-weight:800;color:#3d2b1f;"
-            "background:#f0e6d3;'>SafeStory</div>",
+            "<div style='padding:18px 16px 0;font-size:1.25rem;font-weight:800;"
+            "color:#3d2b1f;background:#f0e6d3;'>SafeStory</div>",
             unsafe_allow_html=True,
         )
     with col_gear:
-        st.markdown("<div style='padding-top:10px;background:#f0e6d3;'>", unsafe_allow_html=True)
+        st.markdown("<div style='padding-top:14px;background:#f0e6d3;'>",
+                    unsafe_allow_html=True)
         if st.button("⚙️", key="gear"):
             st.session_state.show_nav = not st.session_state.get("show_nav", False)
             st.rerun()
         st.markdown("</div>", unsafe_allow_html=True)
 
-    # 설정 내비게이션
     if st.session_state.get("show_nav"):
         ncols = st.columns(5)
         for nc, (lbl, mode) in zip(ncols, [
-            ("부모 관리", "parent"), ("아이 모드", "child"),
-            ("도서관", "library"), ("큐레이터", "explore"), ("동화 읽기", "reader")
+            ("부모 관리","parent"),("아이 모드","child"),
+            ("도서관","library"),("큐레이터","explore"),("동화 읽기","reader"),
         ]):
             with nc:
                 if st.button(lbl, use_container_width=True):
@@ -245,19 +239,49 @@ def show(user: dict):
                     st.session_state.show_nav = False
                     st.rerun()
 
-    # ── 카테고리 가로 탭 ──────────────────────────────────────────────────────
-    cat_names = [c["name"] for c in CATEGORIES]
-    sel_name  = st.radio(
-        "카테고리",
-        cat_names,
-        horizontal=True,
-        label_visibility="collapsed",
-        key="cat_radio",
+    # ── 검색창 ────────────────────────────────────────────────────────────────
+    st.markdown(
+        "<div style='background:#f0e6d3;padding:14px 16px 6px;'>",
+        unsafe_allow_html=True,
     )
-    sel_cat = next(c for c in CATEGORIES if c["name"] == sel_name)
+
+    # 추천 칩 클릭 시 검색어 미리 채우기
+    if "mood_prefill" in st.session_state:
+        default_q = st.session_state.pop("mood_prefill")
+    else:
+        default_q = st.session_state.get("mood_q", "")
+
+    query = st.text_input(
+        "mood",
+        value=default_q,
+        placeholder="지금 기분이나 상황을 입력해보세요  (예: 잠자기 전에, 차분해지고 싶어)",
+        label_visibility="collapsed",
+        key="mood_q",
+    )
+
+    # 추천 칩
+    st.markdown('<div class="chip-row">', unsafe_allow_html=True)
+    chip_cols = st.columns(len(_SUGGESTIONS))
+    for col, sug in zip(chip_cols, _SUGGESTIONS):
+        with col:
+            if st.button(sug, key=f"chip_{sug}"):
+                st.session_state.mood_prefill = sug
+                st.rerun()
+    st.markdown("</div>", unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True)
 
     # ── 책 그리드 ─────────────────────────────────────────────────────────────
-    with st.spinner(""):
-        books = _books(sel_cat["topic"], 32)
+    if query and query.strip():
+        with st.spinner("딱 맞는 책을 찾는 중..."):
+            topic, desc = _gpt_topic(query.strip())
+        st.markdown(
+            f"<div style='background:#f0e6d3;padding:4px 16px 8px;"
+            f"font-size:.82rem;color:#8b6f5e;'>"
+            f"✦ {desc}</div>",
+            unsafe_allow_html=True,
+        )
+        books = _books(topic, 32)
+    else:
+        books = _books("fairy+tales", 32)
 
     st.components.v1.html(_grid_html(books), height=1600, scrolling=False)
