@@ -280,9 +280,20 @@ def _book_grid(books: list, user: dict) -> None:
                 f'text-align:center;line-height:1.3;">{short}</span></div>'
             )
 
+            # JS: 숨겨진 input에 bid 값을 주입해 Streamlit rerun 트리거 (페이지 새로고침 없음)
+            js = (
+                f"(function(){{"
+                f"var i=document.querySelector(&quot;input[aria-label='__book_click__']&quot;);"
+                f"if(!i)return;"
+                f"Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype,'value')"
+                f".set.call(i,'{bid}');"
+                f"i.dispatchEvent(new Event('input',{{bubbles:true}}));"
+                f"}})()"
+            )
+
             with col:
                 st.markdown(
-                    f'<div onclick="window.location.search=\'?gb={bid}\'" '
+                    f'<div onclick="{js}" '
                     f'style="cursor:pointer;background:hsl({hue},55%,58%);height:320px;'
                     f'overflow:hidden;border-radius:3px 6px 6px 3px;'
                     f'box-shadow:2px 4px 8px rgba(0,0,0,.18);margin-bottom:5px;'
@@ -303,38 +314,51 @@ def _book_grid(books: list, user: dict) -> None:
                 )
 
 
-def show(user: dict):
-    # 책 표지 클릭 시 query param ?gb={id} 로 전달됨
-    if "gb" in st.query_params:
-        try:
-            gid = int(st.query_params["gb"])
-            registry = st.session_state.get("book_registry", {})
-            if gid in registry:
-                b = registry[gid]
-                title, author, cover = b["title"], b["author"], b["cover"]
-            else:
-                fallback = next((b for b in _FALLBACK_BOOKS if b["id"] == gid), None)
-                if fallback:
-                    auths  = fallback.get("authors", [])
-                    title  = fallback["title"]
-                    author = auths[0]["name"].split(",")[0] if auths else ""
-                    cover  = fallback.get("formats", {}).get("image/jpeg", "")
-                else:
-                    r      = requests.get(f"https://gutendex.com/books/{gid}/", timeout=6)
-                    b      = r.json()
-                    auths  = b.get("authors", [])
-                    title  = b.get("title", f"Book {gid}")
-                    author = auths[0]["name"].split(",")[0] if auths else ""
-                    cover  = b.get("formats", {}).get("image/jpeg", "")
-            db.add_approved_book(user["id"], gid, title, author, cover)
-            st.session_state["quick_book_id"] = gid
-            st.session_state.app_mode = "reader"
-            st.query_params.clear()
-            st.rerun()
-        except Exception:
-            st.query_params.clear()
+def _open_book(user: dict, gid: int) -> None:
+    registry = st.session_state.get("book_registry", {})
+    if gid in registry:
+        b = registry[gid]
+        title, author, cover = b["title"], b["author"], b["cover"]
+    else:
+        fallback = next((b for b in _FALLBACK_BOOKS if b["id"] == gid), None)
+        if fallback:
+            auths  = fallback.get("authors", [])
+            title  = fallback["title"]
+            author = auths[0]["name"].split(",")[0] if auths else ""
+            cover  = fallback.get("formats", {}).get("image/jpeg", "")
+        else:
+            try:
+                r     = requests.get(f"https://gutendex.com/books/{gid}/", timeout=6)
+                b     = r.json()
+                auths = b.get("authors", [])
+                title = b.get("title", f"Book {gid}")
+                author = auths[0]["name"].split(",")[0] if auths else ""
+                cover = b.get("formats", {}).get("image/jpeg", "")
+            except Exception:
+                return
+    db.add_approved_book(user["id"], gid, title, author, cover)
+    st.session_state["quick_book_id"] = gid
+    st.session_state.app_mode = "reader"
 
+
+def show(user: dict):
     st.markdown(_HIDE_CHROME, unsafe_allow_html=True)
+
+    # 숨겨진 클릭 수신 input — JS가 값을 넣으면 Streamlit이 rerun
+    st.markdown(
+        "<style>div[data-testid='stTextInput']:has(input[aria-label='__book_click__'])"
+        "{display:none!important}</style>",
+        unsafe_allow_html=True,
+    )
+    clicked = st.text_input("__book_click__", key="__book_click__",
+                             label_visibility="collapsed")
+    if clicked:
+        try:
+            _open_book(user, int(clicked))
+        except Exception:
+            pass
+        st.session_state["__book_click__"] = ""
+        st.rerun()
 
     # ── 헤더: columns([10,1]) — gear 오른쪽 고정 ──────────────────────────────
     col_logo, col_gear = st.columns([10, 1])
