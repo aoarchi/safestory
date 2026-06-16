@@ -7,7 +7,7 @@ import db
 # jsDelivr CDN으로 서빙 — Streamlit Cloud 로컬 path 프록시 문제 우회
 _GRID_COMPONENT = stc.declare_component(
     "book_grid",
-    url="https://cdn.jsdelivr.net/gh/aoarchi/safestory@6ad2b1d/components/book_grid/index.html",
+    url="https://cdn.jsdelivr.net/gh/aoarchi/safestory@d2fb1ea/components/book_grid/index.html",
 )
 
 _HIDE_CHROME = """
