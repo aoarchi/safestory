@@ -53,6 +53,17 @@ def init_db():
             FOREIGN KEY (subscriber_id) REFERENCES users(id),
             FOREIGN KEY (playlist_id) REFERENCES playlists(id)
         );
+        CREATE TABLE IF NOT EXISTS approved_books (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            gutenberg_id INTEGER NOT NULL,
+            title TEXT NOT NULL,
+            author TEXT DEFAULT '',
+            cover_url TEXT DEFAULT '',
+            approved_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(user_id, gutenberg_id),
+            FOREIGN KEY (user_id) REFERENCES users(id)
+        );
     """)
     conn.commit()
     conn.close()
@@ -278,3 +289,38 @@ def copy_playlist(source_id: int, user_id: int, new_name: str) -> bool:
     conn.commit()
     conn.close()
     return True
+
+
+# ── Approved Books ───────────────────────────────────────────────────────────
+
+def add_approved_book(user_id: int, gutenberg_id: int, title: str, author: str, cover_url: str) -> bool:
+    conn = _conn()
+    try:
+        conn.execute(
+            "INSERT INTO approved_books (user_id, gutenberg_id, title, author, cover_url) VALUES (?, ?, ?, ?, ?)",
+            (user_id, gutenberg_id, title, author, cover_url),
+        )
+        conn.commit()
+        return True
+    except sqlite3.IntegrityError:
+        return False
+    finally:
+        conn.close()
+
+
+def get_approved_books(user_id: int):
+    conn = _conn()
+    rows = conn.execute(
+        "SELECT * FROM approved_books WHERE user_id = ? ORDER BY approved_at DESC", (user_id,)
+    ).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def remove_approved_book(user_id: int, gutenberg_id: int):
+    conn = _conn()
+    conn.execute(
+        "DELETE FROM approved_books WHERE user_id = ? AND gutenberg_id = ?", (user_id, gutenberg_id)
+    )
+    conn.commit()
+    conn.close()
