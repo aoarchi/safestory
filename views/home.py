@@ -128,6 +128,42 @@ _FALLBACK_BOOKS = [
 ]
 
 
+_KO_TITLES = {
+    2591: "그림 형제 동화",
+    1597: "안데르센 동화",
+    11:   "이상한 나라의 앨리스",
+    55:   "오즈의 마법사",
+    236:  "정글북",
+    289:  "버드나무에 부는 바람",
+    120:  "보물섬",
+    74:   "톰 소여의 모험",
+    76:   "허클베리 핀의 모험",
+    21:   "이솝 우화",
+    46:   "크리스마스 캐럴",
+    521:  "로빈슨 크루소",
+    829:  "걸리버 여행기",
+    514:  "작은 아씨들",
+    271:  "블랙 뷰티",
+    113:  "비밀의 화원",
+    164:  "해저 2만 리",
+    103:  "80일간의 세계일주",
+    215:  "야성의 부름",
+    910:  "화이트 팽",
+    964:  "로빈 후드의 모험",
+    1818: "닥터 둘리틀 이야기",
+    3750: "스위스 가족 로빈슨",
+    16:   "피터 팬",
+    2852: "바스커빌의 개",
+    1661: "셜록 홈즈의 모험",
+    42:   "지킬 박사와 하이드",
+    1400: "위대한 유산",
+    730:  "올리버 트위스트",
+    1184: "몬테크리스토 백작",
+    749:  "다섯 꼬마 페퍼스",
+    203:  "톰 아저씨의 오두막",
+}
+
+
 def _keyword_fallback(query: str) -> str:
     for kw, topic in _KEYWORD_MAP.items():
         if kw in query:
@@ -229,8 +265,9 @@ def _book_grid(books: list, user: dict) -> None:
             bid    = book["id"]
             cover  = registry[bid]["cover"]
             short  = _html.escape(
-                book["title"][:14] + "…" if len(book["title"]) > 14 else book["title"]
+                book["title"][:16] + "…" if len(book["title"]) > 16 else book["title"]
             )
+            ko_title = _html.escape(_KO_TITLES.get(bid, ""))
             author = _html.escape(registry[bid]["author"])
             hue    = bid % 360
 
@@ -255,10 +292,13 @@ def _book_grid(books: list, user: dict) -> None:
                     f'onmouseout="this.style.transform=\'\';'
                     f'this.style.boxShadow=\'2px 4px 8px rgba(0,0,0,.18)\'">'
                     f'{img_inner}</div>'
-                    f"<div style='font-size:.6rem;font-weight:700;line-height:1.2;height:2.4em;"
-                    f"overflow:hidden;margin-bottom:1px;'>{short}</div>"
-                    f"<div style='font-size:.55rem;color:#888;height:1.4em;overflow:hidden;'>"
-                    f"{author}</div>",
+                    f"<div style='font-size:.84rem;font-weight:700;line-height:1.3;height:1.3em;"
+                    f"overflow:hidden;margin-bottom:2px;white-space:nowrap;'>{short}</div>"
+                    f"<div style='font-size:.75rem;color:#5a3e2b;font-weight:600;height:1.2em;"
+                    f"overflow:hidden;margin-bottom:1px;white-space:nowrap;'>"
+                    f"{ko_title}</div>"
+                    f"<div style='font-size:.6rem;color:#888;height:1.2em;overflow:hidden;"
+                    f"white-space:nowrap;'>{author}</div>",
                     unsafe_allow_html=True,
                 )
 
