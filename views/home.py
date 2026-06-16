@@ -80,6 +80,52 @@ _TOPIC_DESC = {
 }
 
 
+def _fb(bid: int, title: str, author: str) -> dict:
+    return {
+        "id": bid,
+        "title": title,
+        "authors": [{"name": author}],
+        "formats": {
+            "image/jpeg": f"https://www.gutenberg.org/cache/epub/{bid}/pg{bid}.cover.medium.jpg"
+        },
+    }
+
+_FALLBACK_BOOKS = [
+    _fb(2591,  "Grimms' Fairy Tales",                     "Grimm, Jacob"),
+    _fb(1597,  "Andersen's Fairy Tales",                  "Andersen, H. C."),
+    _fb(11,    "Alice's Adventures in Wonderland",         "Carroll, Lewis"),
+    _fb(55,    "The Wonderful Wizard of Oz",               "Baum, L. Frank"),
+    _fb(236,   "The Jungle Book",                          "Kipling, Rudyard"),
+    _fb(289,   "The Wind in the Willows",                  "Grahame, Kenneth"),
+    _fb(120,   "Treasure Island",                          "Stevenson, Robert Louis"),
+    _fb(74,    "The Adventures of Tom Sawyer",             "Twain, Mark"),
+    _fb(76,    "Adventures of Huckleberry Finn",           "Twain, Mark"),
+    _fb(21,    "Aesop's Fables",                           "Aesop"),
+    _fb(46,    "A Christmas Carol",                        "Dickens, Charles"),
+    _fb(521,   "Robinson Crusoe",                          "Defoe, Daniel"),
+    _fb(829,   "Gulliver's Travels",                       "Swift, Jonathan"),
+    _fb(514,   "Little Women",                             "Alcott, Louisa May"),
+    _fb(271,   "Black Beauty",                             "Sewell, Anna"),
+    _fb(113,   "The Secret Garden",                        "Burnett, Frances Hodgson"),
+    _fb(164,   "Twenty Thousand Leagues Under the Sea",    "Verne, Jules"),
+    _fb(103,   "Around the World in Eighty Days",          "Verne, Jules"),
+    _fb(215,   "The Call of the Wild",                     "London, Jack"),
+    _fb(910,   "White Fang",                               "London, Jack"),
+    _fb(964,   "The Merry Adventures of Robin Hood",       "Pyle, Howard"),
+    _fb(1818,  "The Story of Doctor Dolittle",             "Lofting, Hugh"),
+    _fb(3750,  "Swiss Family Robinson",                    "Wyss, Johann David"),
+    _fb(16,    "Peter Pan",                                "Barrie, J. M."),
+    _fb(2852,  "The Hound of the Baskervilles",            "Doyle, Arthur Conan"),
+    _fb(1661,  "The Adventures of Sherlock Holmes",        "Doyle, Arthur Conan"),
+    _fb(42,    "The Strange Case of Dr Jekyll and Mr Hyde","Stevenson, Robert Louis"),
+    _fb(1400,  "Great Expectations",                       "Dickens, Charles"),
+    _fb(730,   "Oliver Twist",                             "Dickens, Charles"),
+    _fb(1184,  "The Count of Monte Cristo",                "Dumas, Alexandre"),
+    _fb(749,   "Five Little Peppers and How They Grew",    "Sidney, Margaret"),
+    _fb(203,   "Uncle Tom's Cabin",                        "Stowe, Harriet Beecher"),
+]
+
+
 def _keyword_fallback(query: str) -> str:
     for kw, topic in _KEYWORD_MAP.items():
         if kw in query:
@@ -126,7 +172,7 @@ def _books(topic: str, n: int = 32) -> list:
             r = requests.get(
                 "https://gutendex.com/books/",
                 params={"topic": topic, "languages": "en", "page": page},
-                timeout=10,
+                timeout=8,
             )
             data = r.json()
             for b in data.get("results", []):
@@ -138,12 +184,13 @@ def _books(topic: str, n: int = 32) -> list:
             page += 1
         except Exception:
             break
+    # 부족하면 fairy+tales 로 보충
     if len(collected) < n:
         try:
             r = requests.get(
                 "https://gutendex.com/books/",
                 params={"topic": "fairy+tales", "languages": "en", "page": 1},
-                timeout=10,
+                timeout=8,
             )
             for b in r.json().get("results", []):
                 if b["id"] not in seen and len(collected) < n:
@@ -151,6 +198,14 @@ def _books(topic: str, n: int = 32) -> list:
                     collected.append(b)
         except Exception:
             pass
+    # API 결과가 전혀 없으면 하드코딩 폴백 사용
+    if not collected:
+        return _FALLBACK_BOOKS[:n]
+    # 그래도 모자라면 폴백으로 채움
+    if len(collected) < n:
+        for fb in _FALLBACK_BOOKS:
+            if fb["id"] not in seen and len(collected) < n:
+                collected.append(fb)
     return collected[:n]
 
 
