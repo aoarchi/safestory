@@ -2,7 +2,7 @@ import streamlit as st
 
 import db
 from auth import login_page
-from views import child, explore, parent
+from views import child, explore, parent, reader
 
 # ── Bootstrap ────────────────────────────────────────────────────────────────
 
@@ -41,7 +41,7 @@ with st.sidebar:
     st.markdown("## 📚 SafeStory")
     mode = st.radio(
         "mode",
-        ["👨‍👩‍👧 부모 모드", "👶 아이 시청 모드", "🌍 큐레이터 둘러보기"],
+        ["👨‍👩‍👧 부모 모드", "👶 아이 시청 모드", "🌍 큐레이터 둘러보기", "📖 동화 읽기"],
         label_visibility="collapsed",
     )
 
@@ -51,3 +51,5 @@ elif mode == "👶 아이 시청 모드":
     child.show(user)
 elif mode == "🌍 큐레이터 둘러보기":
     explore.show(user)
+elif mode == "📖 동화 읽기":
+    reader.show(user)
