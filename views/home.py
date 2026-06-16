@@ -298,7 +298,7 @@ def _book_grid(books: list, user: dict) -> None:
                     f"overflow:hidden;margin-bottom:1px;white-space:nowrap;'>"
                     f"{ko_title}</div>"
                     f"<div style='font-size:.6rem;color:#888;height:1.2em;overflow:hidden;"
-                    f"white-space:nowrap;'>{author}</div>",
+                    f"white-space:nowrap;margin-bottom:20px;'>{author}</div>",
                     unsafe_allow_html=True,
                 )
 
