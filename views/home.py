@@ -9,7 +9,11 @@ header[data-testid="stHeader"] { display:none !important; }
 footer     { display:none !important; }
 section[data-testid="stSidebar"] { display:none !important; }
 .block-container { padding:0 !important; max-width:100% !important; }
-
+/* 전체 앱 배경 베이지 */
+.stApp, [data-testid="stAppViewContainer"], [data-testid="stMain"],
+[data-testid="stVerticalBlock"], section.main > div {
+    background: #f0e6d3 !important;
+}
 /* 검색창 */
 div[data-testid="stTextInput"] input {
     background: #fff !important;
@@ -22,18 +26,7 @@ div[data-testid="stTextInput"] input {
 }
 div[data-testid="stTextInput"] input::placeholder { color: #b09a8a !important; }
 div[data-testid="stTextInput"] > label { display:none !important; }
-
-/* 추천 칩 버튼 */
-.chip-row button {
-    background: #e8ddd0 !important;
-    border: none !important;
-    border-radius: 16px !important;
-    padding: 4px 14px !important;
-    font-size: 0.78rem !important;
-    color: #5a3e2b !important;
-    white-space: nowrap !important;
-}
-.chip-row button:hover { background: #d4c4b0 !important; }
+div[data-testid="stTextInput"] { background: #f0e6d3 !important; }
 </style>
 """
 
@@ -42,12 +35,6 @@ _PALETTES = [
     ("#e8c4d4","#be6a95"),("#e8dfc4","#bea96a"),("#c4e8e8","#6abebe"),
     ("#d4c4e8","#8a6abe"),("#e8c4c4","#be6a6a"),("#c4e8d0","#6abe8a"),
     ("#e0e8c4","#9abe6a"),
-]
-
-_SUGGESTIONS = [
-    "잠자기 전에", "긴 여행 중이야", "차분해지고 싶어",
-    "신나는 모험이 듣고 싶어", "동물 이야기", "웃긴 이야기 추천해줘",
-    "공부하기 전에", "비 오는 날",
 ]
 
 _KEYWORD_MAP = {
@@ -295,34 +282,13 @@ def show(user: dict):
                     st.rerun()
 
     # ── 검색창 ────────────────────────────────────────────────────────────────
-    st.markdown(
-        "<div style='background:#f0e6d3;padding:14px 16px 6px;'>",
-        unsafe_allow_html=True,
-    )
-
-    # 추천 칩 클릭 시 검색어 미리 채우기
-    if "mood_prefill" in st.session_state:
-        default_q = st.session_state.pop("mood_prefill")
-    else:
-        default_q = st.session_state.get("mood_q", "")
-
+    st.markdown("<div style='padding:14px 16px 6px;'>", unsafe_allow_html=True)
     query = st.text_input(
         "mood",
-        value=default_q,
         placeholder="지금 기분이나 상황을 입력해보세요  (예: 잠자기 전에, 차분해지고 싶어)",
         label_visibility="collapsed",
         key="mood_q",
     )
-
-    # 추천 칩
-    st.markdown('<div class="chip-row">', unsafe_allow_html=True)
-    chip_cols = st.columns(len(_SUGGESTIONS))
-    for col, sug in zip(chip_cols, _SUGGESTIONS):
-        with col:
-            if st.button(sug, key=f"chip_{sug}"):
-                st.session_state.mood_prefill = sug
-                st.rerun()
-    st.markdown("</div>", unsafe_allow_html=True)
     st.markdown("</div>", unsafe_allow_html=True)
 
     # ── 책 그리드 ─────────────────────────────────────────────────────────────
