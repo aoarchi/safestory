@@ -276,7 +276,7 @@ def show(user: dict):
     col_logo, col_gear = st.columns([10, 1])
     with col_logo:
         st.markdown(
-            "<div style='padding-top:18px;font-size:1.25rem;font-weight:800;"
+            "<div style='padding:18px 0 0 16px;font-size:1.25rem;font-weight:800;"
             "color:#3d2b1f;'>SafeStory</div>",
             unsafe_allow_html=True,
         )
@@ -300,7 +300,7 @@ def show(user: dict):
     # ── 검색창: 같은 [10,1] columns → SafeStory와 자동 정렬 ───────────────────
     col_search, _ = st.columns([10, 1])
     with col_search:
-        st.markdown("<div style='padding-top:10px;'>", unsafe_allow_html=True)
+        st.markdown("<div style='padding:10px 0 0 16px;'>", unsafe_allow_html=True)
         query = st.text_input(
             "mood",
             placeholder="SEARCH",
