@@ -303,7 +303,14 @@ def _grid_html(books: list) -> str:
 <script>
   document.querySelectorAll('.card-wrap').forEach(function(el) {{
     el.addEventListener('click', function() {{
-      window.parent.postMessage({{type:'book', bid: this.dataset.bid}}, '*');
+      var bid = this.dataset.bid;
+      var inp = window.parent.document.querySelector('input[aria-label="bcr"]');
+      if (!inp) return;
+      var setter = Object.getOwnPropertyDescriptor(
+        window.parent.HTMLInputElement.prototype, 'value'
+      ).set;
+      setter.call(inp, bid);
+      inp.dispatchEvent(new Event('input', {{bubbles: true}}));
     }});
   }});
 </script>
@@ -337,30 +344,10 @@ def _open_book(user: dict, gid: int) -> None:
     st.session_state.app_mode = "reader"
 
 
-# postMessage 수신 리스너 — allow-same-origin 덕분에 window.parent.document 접근 가능
-_LISTENER_HTML = """
-<script>
-window.addEventListener('message', function(e) {
-  if (!e.data || e.data.type !== 'book' || !e.data.bid) return;
-  var inp = window.parent.document.querySelector('input[aria-label="bcr"]');
-  if (!inp) return;
-  var setter = Object.getOwnPropertyDescriptor(
-    window.parent.HTMLInputElement.prototype, 'value'
-  ).set;
-  setter.call(inp, String(e.data.bid));
-  inp.dispatchEvent(new Event('input', {bubbles: true}));
-});
-</script>
-"""
-
-
 def show(user: dict):
     st.markdown(_HIDE_CHROME, unsafe_allow_html=True)
 
-    # 리스너 iframe (높이 0, 숨김) — postMessage 받아서 숨김 input 트리거
-    st.components.v1.html(_LISTENER_HTML, height=0)
-
-    # 숨김 input — 리스너가 aria-label="bcr"로 찾아서 값을 넣으면 Streamlit이 감지해 rerun
+    # 숨김 input — 그리드 iframe(allow-same-origin)이 직접 aria-label="bcr"로 찾아서 값을 넣으면 Streamlit rerun
     st.markdown(
         "<style>div[data-testid='stTextInput']:has(input[aria-label='bcr'])"
         "{position:absolute;opacity:0;pointer-events:none;height:0;overflow:hidden}</style>",
