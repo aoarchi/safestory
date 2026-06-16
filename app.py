@@ -2,9 +2,7 @@ import streamlit as st
 
 import db
 from auth import login_page
-from views import child, explore, library, parent, reader
-
-# ── Bootstrap ────────────────────────────────────────────────────────────────
+from views import child, explore, home, library, parent, reader
 
 db.init_db()
 
@@ -12,17 +10,10 @@ st.set_page_config(
     page_title="SafeStory",
     page_icon="📚",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="collapsed",
 )
 
-st.markdown("""
-<style>
-.stApp { background-color: #f8f9ff; }
-.block-container { padding-top: 1.8rem; }
-</style>
-""", unsafe_allow_html=True)
-
-# ── Auth guard ────────────────────────────────────────────────────────────────
+# ── Auth ──────────────────────────────────────────────────────────────────────
 
 if "user" not in st.session_state:
     login_page()
@@ -30,28 +21,45 @@ if "user" not in st.session_state:
 
 user = st.session_state.user
 
-# ── Mode routing ──────────────────────────────────────────────────────────────
+# ── 아이 모드 — 전체화면 ──────────────────────────────────────────────────────
 
-# Child mode renders its own full-screen UI (no sidebar navigation)
 if st.session_state.get("child_auth"):
     child.show(user)
     st.stop()
 
-with st.sidebar:
-    st.markdown("## 📚 SafeStory")
-    mode = st.radio(
-        "mode",
-        ["👨‍👩‍👧 부모 모드", "👶 아이 시청 모드", "📚 동화 도서관", "🌍 큐레이터 둘러보기", "📖 동화 읽기"],
-        label_visibility="collapsed",
-    )
+# ── 모드 라우팅 ───────────────────────────────────────────────────────────────
 
-if mode == "👨‍👩‍👧 부모 모드":
+mode = st.session_state.get("app_mode", "home")
+
+if mode == "home":
+    home.show(user)
+elif mode == "parent":
+    # 부모 모드는 사이드바 사용
+    st.markdown("""
+    <style>.stApp{background:#f8f9ff}</style>
+    """, unsafe_allow_html=True)
+    with st.sidebar:
+        if st.button("← 홈으로", use_container_width=True):
+            st.session_state.app_mode = "home"
+            st.rerun()
     parent.show(user)
-elif mode == "👶 아이 시청 모드":
+elif mode == "child":
     child.show(user)
-elif mode == "📚 동화 도서관":
+elif mode == "library":
+    with st.sidebar:
+        if st.button("← 홈으로", use_container_width=True):
+            st.session_state.app_mode = "home"
+            st.rerun()
     library.show(user)
-elif mode == "🌍 큐레이터 둘러보기":
+elif mode == "explore":
+    with st.sidebar:
+        if st.button("← 홈으로", use_container_width=True):
+            st.session_state.app_mode = "home"
+            st.rerun()
     explore.show(user)
-elif mode == "📖 동화 읽기":
+elif mode == "reader":
+    with st.sidebar:
+        if st.button("← 홈으로", use_container_width=True):
+            st.session_state.app_mode = "home"
+            st.rerun()
     reader.show(user)
