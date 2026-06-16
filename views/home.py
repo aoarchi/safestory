@@ -222,24 +222,28 @@ def _book_grid(books: list, user: dict) -> None:
             author  = authors[0]["name"].split(",")[0] if authors else ""
 
             with col:
+                hue = bid % 360
                 if cover:
-                    st.image(cover, use_container_width=True)
+                    img_inner = (
+                        f'<img src="{cover}" style="width:100%;height:100%;'
+                        f'object-fit:cover;display:block;border-radius:3px 6px 6px 3px;">'
+                    )
                 else:
-                    hue = bid % 360
-                    st.markdown(
-                        f'<div style="background:hsl({hue},55%,58%);height:90px;'
-                        f'border-radius:3px 6px 6px 3px;display:flex;align-items:center;'
-                        f'justify-content:center;padding:6px;margin-bottom:4px;'
-                        f'box-shadow:2px 4px 8px rgba(0,0,0,.18);">'
+                    img_inner = (
+                        f'<div style="width:100%;height:100%;display:flex;align-items:center;'
+                        f'justify-content:center;padding:6px;">'
                         f'<span style="color:#fff;font-size:.55rem;font-weight:700;'
-                        f'text-align:center;line-height:1.3;">{short}</span></div>',
-                        unsafe_allow_html=True,
+                        f'text-align:center;line-height:1.3;">{short}</span></div>'
                     )
 
                 st.markdown(
-                    f"<div style='font-size:.6rem;font-weight:700;line-height:1.2;"
-                    f"margin:3px 0 1px;'>{short}</div>"
-                    f"<div style='font-size:.55rem;color:#888;margin-bottom:3px;'>{author}</div>",
+                    f'<div style="background:hsl({hue},55%,58%);height:110px;overflow:hidden;'
+                    f'border-radius:3px 6px 6px 3px;box-shadow:2px 4px 8px rgba(0,0,0,.18);'
+                    f'margin-bottom:5px;">{img_inner}</div>'
+                    f"<div style='font-size:.6rem;font-weight:700;line-height:1.2;height:2.4em;"
+                    f"overflow:hidden;margin-bottom:1px;'>{short}</div>"
+                    f"<div style='font-size:.55rem;color:#888;height:1.4em;overflow:hidden;"
+                    f"margin-bottom:4px;'>{author}</div>",
                     unsafe_allow_html=True,
                 )
 
