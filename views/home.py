@@ -259,12 +259,14 @@ def _card(book: dict, idx: int) -> str:
     ko_line = f'<div class="ko">{ko}</div>' if ko else '<div class="ko"></div>'
 
     return (
-        f'<div class="book" data-bid="{bid}" style="transform:rotate({tilt}deg);" title="{title}">'
+        f'<div class="card-wrap" data-bid="{bid}">'
+        f'<div class="book" style="transform:rotate({tilt}deg);" title="{title}">'
         f'<div class="spine"></div>{inner}</div>'
         f'<div class="label">'
         f'<div class="en">{short}</div>'
         f'{ko_line}'
         f'<div class="au">{author}</div>'
+        f'</div>'
         f'</div>'
     )
 
@@ -276,15 +278,16 @@ def _grid_html(books: list) -> str:
 <style>
   *{{box-sizing:border-box;margin:0;padding:0}}
   body{{background:#f0e6d3;padding:16px 16px 40px;font-family:-apple-system,sans-serif;}}
-  .grid{{display:grid;grid-template-columns:repeat(8,1fr);gap:16px 12px;}}
+  .grid{{display:grid;grid-template-columns:repeat(8,1fr);gap:20px 12px;}}
+  .card-wrap{{cursor:pointer;}}
+  .card-wrap:hover .book{{transform:rotate(0deg) translateY(-10px) scale(1.06) !important;
+               box-shadow:4px 18px 36px rgba(0,0,0,.28);z-index:30;}}
   .book{{width:100%;aspect-ratio:108/157;border-radius:2px 6px 6px 2px;overflow:hidden;
          box-shadow:2px 4px 12px rgba(0,0,0,.22),0 1px 3px rgba(0,0,0,.1);
-         cursor:pointer;transition:transform .2s,box-shadow .2s;
+         transition:transform .2s,box-shadow .2s;
          position:relative;background:#ddd;}}
   .spine{{position:absolute;left:0;top:0;bottom:0;width:6px;
           background:rgba(0,0,0,.18);z-index:2;}}
-  .book:hover{{transform:rotate(0deg) translateY(-10px) scale(1.06) !important;
-               box-shadow:4px 18px 36px rgba(0,0,0,.28);z-index:30;}}
   .label{{margin-top:6px;}}
   .en{{font-size:.78rem;font-weight:700;line-height:1.3;white-space:nowrap;
        overflow:hidden;text-overflow:ellipsis;color:#3d2b1f;}}
@@ -298,7 +301,7 @@ def _grid_html(books: list) -> str:
 </style></head><body>
   <div class="grid">{cards}</div>
 <script>
-  document.querySelectorAll('.book').forEach(function(el) {{
+  document.querySelectorAll('.card-wrap').forEach(function(el) {{
     el.addEventListener('click', function() {{
       window.parent.postMessage({{type:'book', bid: this.dataset.bid}}, '*');
     }});
