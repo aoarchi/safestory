@@ -14,9 +14,16 @@ section[data-testid="stSidebar"] { display:none !important; }
 [data-testid="stVerticalBlock"], section.main > div {
     background: #f0e6d3 !important;
 }
-/* 컬럼 내부 패딩 제거 → SafeStory / SEARCH 좌측 정렬 통일 */
-[data-testid="stHorizontalBlock"] { gap: 0 !important; }
-[data-testid="column"] { padding: 0 !important; min-width: 0 !important; }
+/* gear 버튼 우상단 고정 */
+[data-testid="element-container"]:has(.gear-anchor)
+  + [data-testid="element-container"] {
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    z-index: 50;
+}
+/* baseweb 입력 내부 padding 제거 → SEARCH 텍스트 왼쪽 정렬 */
+div[data-baseweb="base-input"] { padding: 0 !important; }
 /* 검색창 — Streamlit 기본 스타일 완전 제거 */
 div[data-testid="stTextInput"],
 div[data-testid="stTextInput"] > div,
@@ -273,21 +280,17 @@ def _grid_html(books: list) -> str:
 def show(user: dict):
     st.markdown(_HIDE_CHROME, unsafe_allow_html=True)
 
-    # ── 헤더 ──────────────────────────────────────────────────────────────────
-    col_logo, col_gear = st.columns([10, 1])
-    with col_logo:
-        st.markdown(
-            "<div style='padding:18px 0 0 20px;font-size:1.25rem;font-weight:800;"
-            "color:#3d2b1f;'>SafeStory</div>",
-            unsafe_allow_html=True,
-        )
-    with col_gear:
-        st.markdown("<div style='padding-top:14px;text-align:right;padding-right:8px;'>",
-                    unsafe_allow_html=True)
-        if st.button("⚙️", key="gear"):
-            st.session_state.show_nav = not st.session_state.get("show_nav", False)
-            st.rerun()
-        st.markdown("</div>", unsafe_allow_html=True)
+    # ── 타이틀 (full-width, columns 없음) ─────────────────────────────────────
+    st.markdown(
+        "<div style='padding:18px 20px 0;font-size:1.25rem;font-weight:800;"
+        "color:#3d2b1f;'>SafeStory</div>",
+        unsafe_allow_html=True,
+    )
+    # gear 버튼 — CSS로 우상단 절대 위치
+    st.markdown("<div class='gear-anchor'></div>", unsafe_allow_html=True)
+    if st.button("⚙️", key="gear"):
+        st.session_state.show_nav = not st.session_state.get("show_nav", False)
+        st.rerun()
 
     if st.session_state.get("show_nav"):
         ncols = st.columns(5)
@@ -301,7 +304,7 @@ def show(user: dict):
                     st.session_state.show_nav = False
                     st.rerun()
 
-    # ── 검색창 ────────────────────────────────────────────────────────────────
+    # ── 검색창 (같은 20px 왼쪽 기준) ──────────────────────────────────────────
     st.markdown("<div style='padding:14px 20px 6px;'>", unsafe_allow_html=True)
     query = st.text_input(
         "mood",
